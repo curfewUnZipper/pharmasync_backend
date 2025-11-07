@@ -11,12 +11,36 @@ db = client[os.getenv("DB_NAME")]
 app = Flask(__name__)
 
 # -----------------------
-# GET all pharmacies
+# GET all pharmacies (with basic info + subscription count)
 # -----------------------
 @app.route("/pharmacies", methods=["GET"])
 def get_pharmacies():
     pharmacies = list(db.pharmacies.find({}, {"_id": 0}))
+    for p in pharmacies:
+        total_stock = sum(m["stock"] for m in p["inventory"])
+        total_subs = db.customers.count_documents({
+            "subscriptions.pharmacy": {"$regex": f"^{p['name']}$", "$options": "i"}
+        })
+        p["total_stock"] = total_stock
+        p["total_subscriptions"] = total_subs
     return jsonify(pharmacies)
+
+
+# -----------------------
+# GET a single pharmacy’s inventory (detailed view)
+# -----------------------
+@app.route("/pharmacy/<name>", methods=["GET"])
+def get_pharmacy(name):
+    pharmacy = db.pharmacies.find_one({"name": {"$regex": f"^{name}$", "$options": "i"}}, {"_id": 0})
+    if not pharmacy:
+        return jsonify({"error": "Pharmacy not found"}), 404
+
+    for med in pharmacy["inventory"]:
+        med["subscriptions"] = db.customers.count_documents({
+            "subscriptions.medicine": {"$regex": f"^{med['medicine']}$", "$options": "i"},
+            "subscriptions.pharmacy": {"$regex": f"^{pharmacy['name']}$", "$options": "i"}
+        })
+    return jsonify(pharmacy)
 
 
 # -----------------------
@@ -40,7 +64,6 @@ def get_medicines():
 def search_medicine():
     data = request.json
     med_name = data.get("medicine", "").strip()
-
     if not med_name:
         return jsonify([])
 
@@ -57,6 +80,33 @@ def search_medicine():
                     "address": p["address"]
                 })
     return jsonify(results)
+
+# -----------------------
+# POST update stock for a medicine in a pharmacy
+# -----------------------
+@app.route("/update_stock", methods=["POST"])
+def update_stock():
+    data = request.json
+    pharmacy_name = data.get("pharmacy")
+    medicine_name = data.get("medicine")
+    new_stock = data.get("stock")
+
+    if not all([pharmacy_name, medicine_name, isinstance(new_stock, int)]):
+        return jsonify({"error": "Invalid data"}), 400
+
+    # Find the pharmacy and update the stock for the specific medicine
+    result = db.pharmacies.update_one(
+        {
+            "name": {"$regex": f"^{pharmacy_name}$", "$options": "i"},
+            "inventory.medicine": {"$regex": f"^{medicine_name}$", "$options": "i"}
+        },
+        {"$set": {"inventory.$.stock": new_stock}}
+    )
+
+    if result.modified_count == 0:
+        return jsonify({"error": "Pharmacy or medicine not found"}), 404
+
+    return jsonify({"message": f"Stock updated to {new_stock} for {medicine_name} at {pharmacy_name}"}), 200
 
 
 if __name__ == "__main__":
