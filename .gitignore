@@ -1,0 +1,80 @@
+# ===============================
+# Python & Virtual Environment
+# ===============================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment folders
+.venv/
+venv/
+env/
+ENV/
+big/
+.conda/
+
+# ===============================
+# Streamlit
+# ===============================
+# Streamlit cache and temporary files
+.streamlit/
+.streamlit/secrets.toml
+.streamlit/config.toml
+
+# Streamlit-specific cache directories
+.streamlit-cache/
+.cache/
+# Newer versions may use this path:
+~/.streamlit/
+
+# ===============================
+# Flask
+# ===============================
+instance/
+*.db
+*.sqlite3
+
+# ===============================
+# Build, Logs & System Files
+# ===============================
+# Logs
+*.log
+logs/
+
+# Build / distribution
+build/
+dist/
+*.egg-info/
+.eggs/
+backend/
+# IDE / editor folders
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# macOS and system files
+.DS_Store
+Thumbs.db
+
+# ===============================
+# Environment Variables
+# ===============================
+.env
+.env.*
+*.env
+config.py
+.toml
+# ===============================
+# Jupyter / Notebooks
+# ===============================
+.ipynb_checkpoints/
+
+# ===============================
+# Misc
+# ===============================
+# Coverage reports
+htmlcov/
+.coverage
+*.cover
+*.py,cover
