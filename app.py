@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from pymongo import MongoClient
 import os
 from dotenv import load_dotenv
+from urllib.parse import unquote
 
 load_dotenv()
 
@@ -31,7 +32,14 @@ def get_pharmacies():
 # -----------------------
 @app.route("/pharmacy/<name>", methods=["GET"])
 def get_pharmacy(name):
-    pharmacy = db.pharmacies.find_one({"name": {"$regex": f"^{name}$", "$options": "i"}}, {"_id": 0})
+    # Decode URL-encoded string
+    name = unquote(name)
+    
+    pharmacy = db.pharmacies.find_one(
+        {"name": {"$regex": f"^{name}$", "$options": "i"}},
+        {"_id": 0}
+    )
+    
     if not pharmacy:
         return jsonify({"error": "Pharmacy not found"}), 404
 
